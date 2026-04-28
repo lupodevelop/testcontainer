@@ -1,9 +1,9 @@
 name = "testcontainer"
 version = "0.1.0"
-description = "Testcontainers-style library for Gleam - start Docker containers in tests with automatic cleanup."
+description = "Testcontainers for Gleam: typed container lifecycle with crash-safe cleanup and a native Unix-socket Docker client."
 licences = ["MIT"]
 repository = { type = "github", user = "lupodevelop", repo = "testcontainer" }
-gleam = ">= 1.1.0"
+gleam = ">= 1.14.0"
 internal_modules = ["testcontainer/internal/*"]
 
 [dependencies]
