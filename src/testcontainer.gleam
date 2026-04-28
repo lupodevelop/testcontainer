@@ -402,26 +402,37 @@ fn parse_port_mapping(
       error.PortMappingParseFailed(container_id, reason)
     }),
   )
-  Ok(dict.from_list(mappings))
+  let bound =
+    list.filter_map(mappings, fn(o) {
+      case o {
+        Some(v) -> Ok(v)
+        None -> Error(Nil)
+      }
+    })
+  Ok(dict.from_list(bound))
 }
 
+// Image `EXPOSE` directives surface every declared port in
+// `NetworkSettings.Ports`, including ones the user never requested. Those
+// entries have a `null` binding list. Treat them as "not requested" and skip,
+// rather than failing the whole inspect — only `expose_port`-requested ports
+// matter for `host_port/2` lookups.
 fn entry_to_mapping(
   entry: #(String, Option(List(PortBinding))),
-) -> Result(#(#(Int, String), Int), String) {
+) -> Result(Option(#(#(Int, String), Int)), String) {
   let #(spec, bindings) = entry
   use key <- result.try(case parse_port_spec(spec) {
     Some(parsed) -> Ok(parsed)
     None -> Error("invalid inspect port key: " <> spec)
   })
-  use bs <- result.try(case bindings {
-    Some(value) -> Ok(value)
-    None -> Error("no host binding in inspect for port key: " <> spec)
-  })
-  use host_port <- result.try(case pick_binding(bs) {
-    Some(value) -> Ok(value)
-    None -> Error("invalid host port binding in inspect for key: " <> spec)
-  })
-  Ok(#(key, host_port))
+  case bindings {
+    None -> Ok(None)
+    Some(bs) ->
+      case pick_binding(bs) {
+        Some(host_port) -> Ok(Some(#(key, host_port)))
+        None -> Error("invalid host port binding in inspect for key: " <> spec)
+      }
+  }
 }
 
 // Prefer IPv4 (HostIp "" or "0.0.0.0") over IPv6 (::), then take the first.

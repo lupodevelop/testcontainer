@@ -1,5 +1,5 @@
 name = "testcontainer"
-version = "1.0.0"
+version = "1.0.1"
 description = "Testcontainers for Gleam: typed container lifecycle with crash-safe cleanup and a native Unix-socket Docker client."
 licences = ["MIT"]
 repository = { type = "github", user = "lupodevelop", repo = "testcontainer" }

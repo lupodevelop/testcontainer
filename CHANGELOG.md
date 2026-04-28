@@ -7,6 +7,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] - 2026-04-29
+
+### Fixed
+
+- `start/1` no longer fails with `PortMappingParseFailed("no host
+  binding in inspect for port key: …")` when an image declares
+  `EXPOSE` for ports the user never requested via `expose_port/2`.
+  Docker surfaces those ports in `NetworkSettings.Ports` with a
+  `null` binding list; the parser now skips them instead of treating
+  them as an error. Real malformed entries (unknown port spec,
+  unparseable host port number) still fail fast.
+  Affected images observed in the wild include `mysql:8.4`
+  (`33060/tcp`) and `rabbitmq:*-management` (`15671/tcp`,
+  `4369/tcp`, `25672/tcp`, …).
+
 ## [1.0.0] - 2026-04-26
 
 First public release. Package name: **`testcontainer`** (the plural form
