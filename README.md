@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://hex.pm/packages/testcontainer"><img src="https://img.shields.io/hexpm/v/testcontainer?color=ffaff3" alt="Hex Package"></a>
   <a href="https://hexdocs.pm/testcontainer/"><img src="https://img.shields.io/badge/hex-docs-ffaff3" alt="Hex Docs"></a>
-  <a href="https://github.com/lupodevelop/testcontiner/actions/workflows/test.yml"><img src="https://github.com/lupodevelop/testcontiner/actions/workflows/test.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/lupodevelop/testcontainer/actions/workflows/test.yml"><img src="https://github.com/lupodevelop/testcontainer/actions/workflows/test.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/hexpm/l/testcontainer?color=blue" alt="License"></a>
   <a href="https://gleam.run"><img src="https://img.shields.io/badge/made%20with-gleam-ffaff3?logo=gleam" alt="Made with Gleam"></a>
 </p>
