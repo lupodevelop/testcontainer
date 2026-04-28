@@ -1,0 +1,18 @@
+name = "testcontainer"
+version = "0.1.0"
+description = "Testcontainers-style library for Gleam - start Docker containers in tests with automatic cleanup."
+licences = ["MIT"]
+repository = { type = "github", user = "lupodevelop", repo = "testcontiner" }
+gleam = ">= 1.1.0"
+internal_modules = ["testcontainer/internal/*"]
+
+[dependencies]
+gleam_stdlib = ">= 0.44.0 and < 2.0.0"
+envie = ">= 1.0.0 and < 2.0.0"
+cowl = ">= 1.0.0 and < 2.0.0"
+gleam_json = ">= 3.1.0 and < 4.0.0"
+gleam_erlang = ">= 1.3.0 and < 2.0.0"
+
+[dev-dependencies]
+gleeunit = ">= 1.0.0 and < 2.0.0"
+woof = ">= 1.6.0 and < 2.0.0"
