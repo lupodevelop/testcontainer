@@ -1,4 +1,31 @@
+# Gleam / Erlang build artifacts
 *.beam
 *.ez
 /build
 erl_crash.dump
+.rebar3/
+_build/
+.erlang.mk/
+deps/
+ebin/
+
+# Hex / package manager
+/.hex
+/.cache
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
