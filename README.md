@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/img/logo.png" alt="Pago, the paguro mascot, carrying a Docker container on his shell" width="220">
+  <img src="https://raw.githubusercontent.com/lupodevelop/testcontainer/main/assets/img/logo.png" alt="Pago, the paguro mascot, carrying a Docker container on his shell" width="220">
 </p>
 
 <h1 align="center">testcontainer</h1>
