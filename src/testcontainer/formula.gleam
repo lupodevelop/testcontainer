@@ -21,6 +21,24 @@ pub opaque type Formula(output) {
   )
 }
 
+/// A StandaloneFormula manages a resource with its own acquire/release
+/// lifecycle, independent of a single Docker container. Use this for
+/// resources like docker-compose stacks that are not backed by a single
+/// container spec.
+///
+/// Unlike `Formula`, `StandaloneFormula` is generic in its error type so
+/// callers can surface domain-specific errors without mapping them into
+/// `testcontainer/error.Error`.
+///
+///   use stack <- testcontainer.with_standalone_formula(compose_formula)
+///
+pub opaque type StandaloneFormula(output, err) {
+  StandaloneFormula(
+    acquire: fn() -> Result(output, err),
+    release: fn() -> Result(Nil, err),
+  )
+}
+
 /// Create a Formula from a ContainerSpec and an extraction function.
 /// Called by formula modules (e.g. `testcontainer_formulas/postgres`).
 pub fn new(
@@ -28,6 +46,16 @@ pub fn new(
   extract: fn(container.Container) -> Result(output, error.Error),
 ) -> Formula(output) {
   Formula(spec: spec, extract: extract)
+}
+
+/// Create a StandaloneFormula from acquire and release functions.
+/// `acquire` is called once to obtain the resource; `release` is always
+/// called after the body finishes, even on error.
+pub fn new_standalone(
+  acquire: fn() -> Result(output, err),
+  release: fn() -> Result(Nil, err),
+) -> StandaloneFormula(output, err) {
+  StandaloneFormula(acquire: acquire, release: release)
 }
 
 // Internal accessors - used only by `testcontainer.gleam`. Marked
@@ -45,4 +73,18 @@ pub fn extract(
   c: container.Container,
 ) -> Result(output, error.Error) {
   f.extract(c)
+}
+
+@internal
+pub fn standalone_acquire(
+  f: StandaloneFormula(output, err),
+) -> Result(output, err) {
+  f.acquire()
+}
+
+@internal
+pub fn standalone_release(
+  f: StandaloneFormula(output, err),
+) -> Result(Nil, err) {
+  f.release()
 }

@@ -340,9 +340,61 @@ pub fn container_with_keep_preserves_stop_timeout_test() {
 
 import testcontainer
 import testcontainer/error as tc_error
+import testcontainer/formula
 
 pub fn force_stop_is_public_test() {
   let _ref: fn(container.Container) -> Result(Nil, tc_error.Error) =
     testcontainer.force_stop
+  Nil
+}
+
+// ---------------------------------------------------------------------------
+// StandaloneFormula — unit tests (no Docker required)
+// ---------------------------------------------------------------------------
+
+pub fn standalone_formula_acquire_release_test() {
+  let f = formula.new_standalone(fn() { Ok("acquired") }, fn() { Ok(Nil) })
+  let result =
+    testcontainer.with_standalone_formula(f, fn(v) {
+      v |> should.equal("acquired")
+      Ok(v)
+    })
+  result |> should.be_ok
+}
+
+pub fn standalone_formula_release_runs_on_body_error_test() {
+  let released = fn() { Ok(Nil) }
+  let f = formula.new_standalone(fn() { Ok(42) }, released)
+  let result =
+    testcontainer.with_standalone_formula(f, fn(_) { Error("body failed") })
+  result |> should.be_error
+}
+
+pub fn standalone_formula_release_error_surfaced_on_body_ok_test() {
+  let f =
+    formula.new_standalone(fn() { Ok(Nil) }, fn() { Error("release failed") })
+  let result = testcontainer.with_standalone_formula(f, fn(_) { Ok("ok") })
+  result |> should.equal(Error("release failed"))
+}
+
+pub fn standalone_formula_acquire_error_skips_body_test() {
+  let f =
+    formula.new_standalone(fn() { Error("acquire failed") }, fn() { Ok(Nil) })
+  let result =
+    testcontainer.with_standalone_formula(f, fn(_) { Ok("should not run") })
+  result |> should.equal(Error("acquire failed"))
+}
+
+pub fn standalone_formula_is_public_test() {
+  let _ref: fn(fn() -> Result(String, String), fn() -> Result(Nil, String)) ->
+    formula.StandaloneFormula(String, String) = formula.new_standalone
+  Nil
+}
+
+pub fn with_standalone_formula_is_public_test() {
+  let _ref: fn(
+    formula.StandaloneFormula(String, String),
+    fn(String) -> Result(Nil, String),
+  ) -> Result(Nil, String) = testcontainer.with_standalone_formula
   Nil
 }

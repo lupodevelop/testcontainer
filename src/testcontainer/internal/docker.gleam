@@ -211,11 +211,29 @@ fn encode_registry_auth(a: config.RegistryAuth) -> String {
 // Single pass: split once on the first `"error":"` marker. If found, take
 // the value up to the next `"`. Avoids two scans of the same stream.
 fn scan_pull_stream_for_error(stream: String) -> option.Option(String) {
-  case string.split_once(stream, "\"error\":\"") {
+  // Docker's pull stream sometimes uses "error":"..." (legacy) and
+  // sometimes "errorDetail":{"message":"..."} (newer Buildx/registries).
+  // Try both, in priority order.
+  case extract_after(stream, "\"error\":\"") {
+    Some(msg) -> Some(msg)
+    None ->
+      case extract_after(stream, "\"errorDetail\":") {
+        Some(remainder) ->
+          case extract_after(remainder, "\"message\":\"") {
+            Some(msg) -> Some(msg)
+            None -> Some("image pull failed (errorDetail without message)")
+          }
+        None -> None
+      }
+  }
+}
+
+fn extract_after(stream: String, marker: String) -> option.Option(String) {
+  case string.split_once(stream, marker) {
     Ok(#(_, rest)) ->
       case string.split_once(rest, "\"") {
         Ok(#(msg, _)) -> Some(msg)
-        Error(_) -> Some("image pull failed")
+        Error(_) -> Some(rest)
       }
     Error(_) -> None
   }
@@ -372,8 +390,69 @@ fn validate_spec(spec: container.ContainerSpec) -> Result(Nil, error.Error) {
       }
     None -> Ok(Nil)
   })
+  use _ <- result.try(validate_envs(spec, image))
+  use _ <- result.try(validate_cmd_or_entrypoint(spec, image))
+  use _ <- result.try(validate_labels(spec, image))
   use _ <- result.try(validate_ports(spec))
   validate_volumes(spec)
+}
+
+fn validate_envs(
+  spec: container.ContainerSpec,
+  image: String,
+) -> Result(Nil, error.Error) {
+  let bad =
+    list.find(container.env(spec), fn(pair) {
+      contains_crlf(pair.0) || contains_crlf(cowl.reveal(pair.1))
+    })
+  case bad {
+    Ok(_) ->
+      Error(error.ContainerCreateFailed(
+        image,
+        "env key or value contains CR/LF",
+      ))
+    Error(Nil) -> Ok(Nil)
+  }
+}
+
+fn validate_cmd_or_entrypoint(
+  spec: container.ContainerSpec,
+  image: String,
+) -> Result(Nil, error.Error) {
+  let cmd_bad = case container.command(spec) {
+    Some(parts) -> list.any(parts, contains_crlf)
+    None -> False
+  }
+  let ep_bad = case container.entrypoint(spec) {
+    Some(parts) -> list.any(parts, contains_crlf)
+    None -> False
+  }
+  case cmd_bad || ep_bad {
+    True ->
+      Error(error.ContainerCreateFailed(
+        image,
+        "command or entrypoint argument contains CR/LF",
+      ))
+    False -> Ok(Nil)
+  }
+}
+
+fn validate_labels(
+  spec: container.ContainerSpec,
+  image: String,
+) -> Result(Nil, error.Error) {
+  let bad =
+    list.find(container.labels(spec), fn(pair) {
+      contains_crlf(pair.0) || contains_crlf(pair.1)
+    })
+  case bad {
+    Ok(_) ->
+      Error(error.ContainerCreateFailed(
+        image,
+        "label key or value contains CR/LF",
+      ))
+    Error(Nil) -> Ok(Nil)
+  }
 }
 
 fn validate_ports(spec: container.ContainerSpec) -> Result(Nil, error.Error) {

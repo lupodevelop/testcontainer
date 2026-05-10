@@ -42,8 +42,12 @@ let assert Ok(host_port) = container.host_port(redis, port.tcp(6379))
 - 📦 **Formule** ([companion package](https://hex.pm/packages/testcontainer_formulas))
   for ready-to-use Postgres / Redis / MySQL / RabbitMQ / Mongo with typed
   connection records
-- 🧱 **Formulas Builder** ([testcontainer_formulas_builder](https://github.com/lupodevelop/testcontainer_formulas_builder)):
-  visual block editor + codegen for `testcontainer_formulas` snippets
+- 🛠 **Dockerfile build-on-test** ([testcontainer_dockerfile](https://hex.pm/packages/testcontainer_dockerfile)):
+  build custom images from a `Dockerfile` at test time and use them as formulas
+- 🧱 **Compose stacks** ([testcontainer_compose](https://hex.pm/packages/testcontainer_compose)):
+  spin up `docker-compose.yml` stacks with typed services and guaranteed cleanup
+- 🎨 **Formulas Builder** ([testcontainer_formulas_builder](https://github.com/lupodevelop/testcontainer_formulas_builder)):
+  visual block editor + codegen, also accepts Dockerfile / compose uploads
 
 ## Install
 

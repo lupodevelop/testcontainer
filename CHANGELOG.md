@@ -7,6 +7,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.2] - 2026-05-04
+
+### Security / Hardening
+
+- `validate_spec/1` now also rejects CR/LF characters in env keys and
+  values, command arguments, entrypoint arguments, and label keys/values.
+  Previously these flowed straight into the Docker JSON body and could
+  in principle confuse the Docker API parser. Now they fail with
+  `ContainerCreateFailed` early.
+
+### Fixed
+
+- `scan_pull_stream_for_error` now also detects the
+  `"errorDetail":{"message":"..."}` format used by newer Docker daemons
+  and Buildx-style registries, in addition to the legacy `"error":"..."`
+  shape. Previously such pull failures slipped through and surfaced as a
+  cryptic `ContainerCreateFailed` further down the call stack.
+
 ## [1.0.1] - 2026-04-29
 
 ### Fixed

@@ -253,6 +253,21 @@ pub fn with_formula(
   combine(body_result, cleanup(c, guard))
 }
 
+/// Acquires a resource using a `StandaloneFormula`, calls `body/1`, then
+/// releases the resource. Release always runs even if body returns an error.
+/// If body succeeded but release failed, the release error is surfaced.
+///
+///   use stack <- testcontainer.with_standalone_formula(compose_formula)
+///
+pub fn with_standalone_formula(
+  f: formula.StandaloneFormula(output, err),
+  body: fn(output) -> Result(a, err),
+) -> Result(a, err) {
+  use output <- result.try(formula.standalone_acquire(f))
+  let body_result = body(output)
+  combine(body_result, formula.standalone_release(f))
+}
+
 // ---------------------------------------------------------------------------
 // Lifecycle helpers
 // ---------------------------------------------------------------------------
