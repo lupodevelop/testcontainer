@@ -7,7 +7,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.1.0] - 2026-10-17
+
+### Migration
+
+- Standalone formula `acquire` and `release` callbacks now run in the same
+  dedicated guard process instead of the caller's process. The body still
+  runs in the caller. Callbacks that depend on process-local state or return
+  resources restricted to the acquiring process must be adapted. See
+  [Standalone resource lifecycles](docs/formulas.md#standalone-resource-lifecycles).
 
 ### Fixed
 
@@ -30,12 +38,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   preserving the original exception even if release also fails.
 - Apply readiness deadlines to socket connections, reads, and polling sleeps;
   prevent probes from reporting success after the timeout.
-
-### Changed
-
-- Run standalone formula acquisition and release in the same dedicated guard
-  process. The body continues to run in the caller's process; acquisition and
-  release callbacks must not depend on the caller's process-local state.
 
 ## [1.0.2] - 2026-05-04
 
