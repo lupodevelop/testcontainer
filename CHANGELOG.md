@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Report the configured Unix or TCP endpoint as a Gleam string in
+  `DockerUnavailable` errors.
 - Retry network removal after a caller crash while container guards are
   still releasing active endpoints.
 - Keep container and network guards active until synchronous cleanup ends.

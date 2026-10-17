@@ -28,8 +28,8 @@ fn transport_request(
   body: String,
 ) -> Result(#(Int, String), String)
 
-@external(erlang, "docker_transport", "socket_path")
-fn transport_socket_path() -> String
+@external(erlang, "docker_transport", "endpoint_label")
+fn transport_endpoint_label() -> String
 
 @external(erlang, "docker_transport", "parse_response")
 fn transport_parse_response(data: String) -> Result(#(Int, String), String)
@@ -104,7 +104,7 @@ fn request_with_headers(
   case transport_request(method, path, headers, body) {
     Ok(#(status, response)) -> Ok(#(status, response))
     Error(reason) ->
-      Error(error.DockerUnavailable(transport_socket_path(), reason))
+      Error(error.DockerUnavailable(transport_endpoint_label(), reason))
   }
 }
 

@@ -5,7 +5,7 @@
          with_deadline/2,
          strip_log_frames/1, split_log_streams/1,
          copy_file_to_container/3,
-         socket_path/0, docker_endpoint/0]).
+         socket_path/0, docker_endpoint/0, endpoint_label/0]).
 
 %% Raw HTTP/1.1 over the Docker daemon socket.
 %%
@@ -65,10 +65,11 @@ connect_endpoint() ->
   end.
 
 endpoint_label() ->
-  case docker_endpoint() of
+  Label = case docker_endpoint() of
     {unix, Path}      -> Path;
     {tcp, Host, Port} -> Host ++ ":" ++ integer_to_list(Port)
-  end.
+  end,
+  unicode:characters_to_binary(Label).
 
 request(Method, Path, Headers, Body) ->
   case connect_endpoint() of
