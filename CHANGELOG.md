@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Decode HTTP bodies according to their headers. Reject malformed status
   lines, invalid or truncated chunks, length mismatches, and ambiguous framing;
   handle chunk extensions, trailers, and non-UTF-8 header values safely.
+- Decode Docker pull errors as JSON, preserving nested messages and escapes,
+  and pull digest-pinned images using the complete digest.
 - Release standalone formula resources after catchable panics/exceptions,
   preserving the original exception even if release also fails.
 - Apply readiness deadlines to socket connections, reads, and polling sleeps;

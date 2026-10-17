@@ -1,4 +1,5 @@
 import cowl
+import gleam/dict
 import gleam/dynamic/decode
 import gleam/int
 import gleam/json
@@ -165,6 +166,10 @@ pub fn pull_image(
   auth: option.Option(config.RegistryAuth),
 ) -> Result(Nil, error.Error) {
   let ref = image_ref.parse(image)
+  use _ <- result.try(case ref.name == "" || ref.tag == "" {
+    True -> Error(error.InvalidImageRef(image))
+    False -> Ok(Nil)
+  })
   let path =
     "/images/create?fromImage="
     <> url_encode(ref.name)
@@ -208,34 +213,42 @@ fn encode_registry_auth(a: config.RegistryAuth) -> String {
   bit_array.base64_encode(<<json.to_string(payload):utf8>>, False)
 }
 
-// Single pass: split once on the first `"error":"` marker. If found, take
-// the value up to the next `"`. Avoids two scans of the same stream.
+// Docker streams newline-delimited JSON objects. Decode them so whitespace,
+// escaped quotes, and nested errorDetail messages retain their meaning.
 fn scan_pull_stream_for_error(stream: String) -> option.Option(String) {
-  // Docker's pull stream sometimes uses "error":"..." (legacy) and
-  // sometimes "errorDetail":{"message":"..."} (newer Buildx/registries).
-  // Try both, in priority order.
-  case extract_after(stream, "\"error\":\"") {
-    Some(msg) -> Some(msg)
-    None ->
-      case extract_after(stream, "\"errorDetail\":") {
-        Some(remainder) ->
-          case extract_after(remainder, "\"message\":\"") {
-            Some(msg) -> Some(msg)
-            None -> Some("image pull failed (errorDetail without message)")
-          }
-        None -> None
-      }
+  case string.trim(stream) {
+    "" -> Some("empty Docker pull response")
+    _ -> scan_pull_events(string.split(stream, "\n"))
   }
 }
 
-fn extract_after(stream: String, marker: String) -> option.Option(String) {
-  case string.split_once(stream, marker) {
-    Ok(#(_, rest)) ->
-      case string.split_once(rest, "\"") {
-        Ok(#(msg, _)) -> Some(msg)
-        Error(_) -> Some(rest)
+fn scan_pull_events(events: List(String)) -> option.Option(String) {
+  case events {
+    [] -> None
+    [line, ..rest] ->
+      case string.trim(line) {
+        "" -> scan_pull_events(rest)
+        event ->
+          case json.parse(event, decode.dict(decode.string, decode.dynamic)) {
+            Error(_) -> Some("invalid JSON in Docker pull response")
+            Ok(fields) ->
+              case dict.get(fields, "error"), dict.get(fields, "errorDetail") {
+                Ok(value), _ ->
+                  Some(
+                    decode.run(value, decode.string)
+                    |> result.unwrap("image pull failed (invalid error field)"),
+                  )
+                _, Ok(value) ->
+                  Some(
+                    decode.run(value, decode.at(["message"], decode.string))
+                    |> result.unwrap(
+                      "image pull failed (errorDetail without message)",
+                    ),
+                  )
+                _, _ -> scan_pull_events(rest)
+              }
+          }
       }
-    Error(_) -> None
   }
 }
 
