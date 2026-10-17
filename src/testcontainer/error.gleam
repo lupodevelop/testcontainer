@@ -1,7 +1,8 @@
 /// Every error returned by the public API is one of these variants.
 /// Each carries enough context to diagnose the problem without scraping logs.
 pub type Error {
-  /// The Docker daemon could not be reached on the configured socket.
+  /// The Docker daemon could not be reached at the configured endpoint.
+  /// `socket_path` contains the Unix socket path or TCP `host:port`.
   DockerUnavailable(socket_path: String, reason: String)
 
   /// The image could not be pulled (network error, auth required, not found).
