@@ -116,13 +116,12 @@ import testcontainer/internal/docker
 pub fn docker_transport_chunked_response_test() {
   let raw =
     "HTTP/1.1 201 Created\r\nContent-Type: application/json\r\nTransfer-Encoding: chunked\r\n\r\n"
-    <> "58\r\n{"
+    <> "c\r\n{"
     <> "\"Id\":\"abc\"}"
     <> "\r\n0\r\n\r\n"
 
   case docker.parse_response(raw) {
-    Ok(#(201, body)) ->
-      string.contains(body, "\"Id\":\"abc\"") |> should.be_true()
+    Ok(#(201, body)) -> body |> should.equal("{\"Id\":\"abc\"}")
     Ok(#(_, _)) -> should.equal("unexpected status", "")
     Error(e) -> should.equal(e, "")
   }

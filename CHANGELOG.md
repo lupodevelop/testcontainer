@@ -17,8 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Always attempt forced container removal after a failed graceful stop;
   treat an already absent container as successfully removed.
 - Remove anonymous container volumes during cleanup, preserving named volumes.
+- Decode HTTP bodies according to their headers. Reject malformed status
+  lines, invalid or truncated chunks, length mismatches, and ambiguous framing;
+  handle chunk extensions, trailers, and non-UTF-8 header values safely.
 - Release standalone formula resources after catchable panics/exceptions,
   preserving the original exception even if release also fails.
+- Apply readiness deadlines to socket connections, reads, and polling sleeps;
+  prevent probes from reporting success after the timeout.
 
 ## [1.0.2] - 2026-05-04
 

@@ -28,6 +28,9 @@ fn now_ms() -> Int
 @external(erlang, "docker_transport", "sleep_ms")
 fn sleep_ms(ms: Int) -> Nil
 
+@external(erlang, "docker_transport", "with_deadline")
+fn with_deadline(deadline: Int, body: fn() -> a) -> a
+
 // ---------------------------------------------------------------------------
 // Port-binding decoder. Built once and reused for every parse.
 // ---------------------------------------------------------------------------
@@ -70,7 +73,9 @@ pub fn run(
   let start = now_ms()
   let deadline = start + wait.timeout_ms(strategy)
   let poll = wait.poll_interval_ms(strategy)
-  poll_loop(strategy, container_id, host, dict.new(), start, deadline, poll)
+  with_deadline(deadline, fn() {
+    poll_loop(strategy, container_id, host, dict.new(), start, deadline, poll)
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -106,7 +111,15 @@ fn poll_loop(
         _, _ -> port_map
       }
       case check_once(strategy, container_id, host, pm, inspect) {
-        Ok(Nil) -> Ok(Nil)
+        Ok(Nil) ->
+          case now_ms() >= deadline {
+            True ->
+              Error(error.WaitTimedOut(
+                wait.describe(strategy),
+                now_ms() - start_ms,
+              ))
+            False -> Ok(Nil)
+          }
         Error(_) -> {
           sleep_ms(poll_ms)
           poll_loop(
