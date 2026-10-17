@@ -180,6 +180,3 @@ Static build:
 ```sh
 npm run build
 ```
-
-Coming: kafka, localstack, elasticsearch.
-See the [roadmap](../ROADMAP.md).

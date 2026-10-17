@@ -22,6 +22,12 @@ configured interval (default 1 s) until it succeeds or the timeout
 `Error(WaitTimedOut(strategy_description, elapsed_ms))` - `elapsed_ms`
 is the actual wall-clock time, not the configured timeout.
 
+The remaining readiness budget also limits Docker/probe socket connections,
+reads, and polling sleeps. A probe that completes after the deadline cannot
+report success. Image pulling, container creation/start, and cleanup happen
+outside this readiness budget, so a complete `with_container` call can take
+longer than the wait timeout.
+
 ## All the strategies
 
 ### `wait.none()`

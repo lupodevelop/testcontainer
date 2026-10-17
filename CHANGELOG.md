@@ -7,6 +7,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- Retry network removal after a caller crash while container guards are
+  still releasing active endpoints.
+- Keep container and network guards active until synchronous cleanup ends.
+- Always attempt forced container removal after a failed graceful stop;
+  treat an already absent container as successfully removed.
+- Remove anonymous container volumes during cleanup, preserving named volumes.
+- Decode HTTP bodies according to their headers. Reject malformed status
+  lines, invalid or truncated chunks, length mismatches, and ambiguous framing;
+  handle chunk extensions, trailers, and non-UTF-8 header values safely.
+- Decode Docker pull errors as JSON, preserving nested messages and escapes,
+  and pull digest-pinned images using the complete digest.
+- Release standalone formula resources after catchable panics/exceptions,
+  preserving the original exception even if release also fails.
+- Apply readiness deadlines to socket connections, reads, and polling sleeps;
+  prevent probes from reporting success after the timeout.
+
 ## [1.0.2] - 2026-05-04
 
 ### Security / Hardening

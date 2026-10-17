@@ -116,13 +116,12 @@ import testcontainer/internal/docker
 pub fn docker_transport_chunked_response_test() {
   let raw =
     "HTTP/1.1 201 Created\r\nContent-Type: application/json\r\nTransfer-Encoding: chunked\r\n\r\n"
-    <> "58\r\n{"
+    <> "c\r\n{"
     <> "\"Id\":\"abc\"}"
     <> "\r\n0\r\n\r\n"
 
   case docker.parse_response(raw) {
-    Ok(#(201, body)) ->
-      string.contains(body, "\"Id\":\"abc\"") |> should.be_true()
+    Ok(#(201, body)) -> body |> should.equal("{\"Id\":\"abc\"}")
     Ok(#(_, _)) -> should.equal("unexpected status", "")
     Error(e) -> should.equal(e, "")
   }
@@ -338,6 +337,7 @@ pub fn container_with_keep_preserves_stop_timeout_test() {
 // (compile-time check; runtime behaviour is covered by integration tests).
 // ---------------------------------------------------------------------------
 
+import gleam/erlang/process
 import testcontainer
 import testcontainer/error as tc_error
 import testcontainer/formula
@@ -363,11 +363,56 @@ pub fn standalone_formula_acquire_release_test() {
 }
 
 pub fn standalone_formula_release_runs_on_body_error_test() {
-  let released = fn() { Ok(Nil) }
-  let f = formula.new_standalone(fn() { Ok(42) }, released)
+  let released = process.new_subject()
+  let release = fn() {
+    process.send(released, Nil)
+    Ok(Nil)
+  }
+  let f = formula.new_standalone(fn() { Ok(42) }, release)
   let result =
     testcontainer.with_standalone_formula(f, fn(_) { Error("body failed") })
-  result |> should.be_error
+  result |> should.equal(Error("body failed"))
+  process.receive(released, 100) |> should.equal(Ok(Nil))
+}
+
+@external(erlang, "testcontainer_test_support", "catch_exception")
+fn catch_exception(body: fn() -> a) -> Result(a, String)
+
+pub fn standalone_formula_releases_after_panic_test() {
+  let released = process.new_subject()
+  let f =
+    formula.new_standalone(fn() { Ok(42) }, fn() {
+      process.send(released, Nil)
+      Ok(Nil)
+    })
+  let outcome =
+    catch_exception(fn() {
+      testcontainer.with_standalone_formula(f, fn(_) {
+        panic as "original-body-panic"
+      })
+    })
+  outcome |> should.be_error()
+  process.receive(released, 100) |> should.equal(Ok(Nil))
+  process.receive(released, 0) |> should.be_error()
+}
+
+pub fn standalone_formula_preserves_panic_if_release_panics_test() {
+  let released = process.new_subject()
+  let f =
+    formula.new_standalone(fn() { Ok(42) }, fn() {
+      process.send(released, Nil)
+      panic as "secondary-release-panic"
+    })
+  let outcome =
+    catch_exception(fn() {
+      testcontainer.with_standalone_formula(f, fn(_) {
+        panic as "original-body-panic"
+      })
+    })
+  let message = outcome |> should.be_error()
+  string.contains(message, "original-body-panic") |> should.be_true()
+  string.contains(message, "secondary-release-panic") |> should.be_false()
+  process.receive(released, 100) |> should.equal(Ok(Nil))
 }
 
 pub fn standalone_formula_release_error_surfaced_on_body_ok_test() {

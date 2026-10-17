@@ -18,6 +18,12 @@ import testcontainer/internal/wait_runner
 import testcontainer/network
 import testcontainer/stack as stack_mod
 
+@external(erlang, "testcontainer_lifecycle", "with_cleanup")
+fn with_cleanup(
+  body: fn() -> Result(a, e),
+  cleanup: fn() -> Result(Nil, e),
+) -> Result(a, e)
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -114,9 +120,11 @@ pub fn stop(c: container.Container) -> Result(Nil, error.Error) {
 /// Stops and removes a container ignoring the keep flag. Useful to
 /// programmatically tear down containers that were started with
 /// `start_and_keep/1` or under `TESTCONTAINERS_KEEP=true`.
+/// Removal is attempted even if graceful stop fails. A successful removal
+/// (including an already absent container) completes cleanup successfully.
 pub fn force_stop(c: container.Container) -> Result(Nil, error.Error) {
   let id = container.id(c)
-  use _ <- result.try(docker.stop_container(id, container.stop_timeout_sec(c)))
+  let _ = docker.stop_container(id, container.stop_timeout_sec(c))
   docker.remove_container(id)
 }
 
@@ -256,6 +264,8 @@ pub fn with_formula(
 /// Acquires a resource using a `StandaloneFormula`, calls `body/1`, then
 /// releases the resource. Release always runs even if body returns an error.
 /// If body succeeded but release failed, the release error is surfaced.
+/// Catchable panics/exceptions also run release before being re-raised.
+/// External process kills and VM termination cannot run this release callback.
 ///
 ///   use stack <- testcontainer.with_standalone_formula(compose_formula)
 ///
@@ -264,21 +274,21 @@ pub fn with_standalone_formula(
   body: fn(output) -> Result(a, err),
 ) -> Result(a, err) {
   use output <- result.try(formula.standalone_acquire(f))
-  let body_result = body(output)
-  combine(body_result, formula.standalone_release(f))
+  with_cleanup(fn() { body(output) }, fn() { formula.standalone_release(f) })
 }
 
 // ---------------------------------------------------------------------------
 // Lifecycle helpers
 // ---------------------------------------------------------------------------
 
-// Send GuardStop and synchronously stop the container.
+// Keep crash protection active until synchronous cleanup finishes.
 fn cleanup(
   c: container.Container,
   guard: process.Subject(GuardEvent),
 ) -> Result(Nil, error.Error) {
+  let outcome = stop(c)
   process.send(guard, GuardStop)
-  stop(c)
+  outcome
 }
 
 // Body's outcome wins. If body succeeded but cleanup failed, surface the

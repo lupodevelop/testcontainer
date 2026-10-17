@@ -7,6 +7,8 @@ pub type ImageRef {
 
 /// Splits an image reference into `(name, tag)`. Falls back to
 /// `tag = "latest"` when no tag is present.
+/// For a digest reference, `tag` contains the complete digest (e.g.
+/// `sha256:...`), which Docker accepts in its pull API's `tag` parameter.
 ///
 /// Heuristic: a Docker tag may contain `[A-Za-z0-9._-]` but never `/`.
 /// The trailing colon-segment is treated as a tag only when it has no
@@ -16,6 +18,13 @@ pub type ImageRef {
 /// interpretation, append the image segment - `registry:5000/image[:tag]` -
 /// which the parser detects via the `/` in the second-to-last segment.
 pub fn parse(raw: String) -> ImageRef {
+  case string.split_once(raw, "@") {
+    Ok(#(reference, digest)) -> ImageRef(parse_tagged(reference).name, digest)
+    Error(_) -> parse_tagged(raw)
+  }
+}
+
+fn parse_tagged(raw: String) -> ImageRef {
   let parts = string.split(raw, ":")
   case list.reverse(parts) {
     [potential_tag, name_part, ..rest_reversed] -> {

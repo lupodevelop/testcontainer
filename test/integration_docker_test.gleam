@@ -178,18 +178,24 @@ pub fn wait_timeout_returns_error_test() {
     False -> Nil
     True -> {
       // File never appears - wait must time out and return an error.
-      testcontainer.with_container(
-        container.new("alpine:3.18")
-          |> container.with_command(["sh", "-c", "sleep 30"])
-          |> container.wait_for(
-            wait.command(["test", "-f", "/tmp/never"])
-            |> wait.with_timeout(1000)
-            |> wait.with_poll_interval(200),
-          ),
-        fn(_c) { Ok(Nil) },
-      )
-      |> should.be_error()
-      Nil
+      let failure =
+        testcontainer.with_container(
+          container.new("alpine:3.18")
+            |> container.with_command(["sh", "-c", "sleep 30"])
+            |> container.wait_for(
+              wait.command(["test", "-f", "/tmp/never"])
+              |> wait.with_timeout(1000)
+              |> wait.with_poll_interval(200),
+            ),
+          fn(_c) { Ok(Nil) },
+        )
+        |> should.be_error()
+      case failure {
+        error.WaitTimedOut(_, elapsed) ->
+          { elapsed >= 1000 } |> should.be_true()
+        _ ->
+          failure |> should.equal(error.WaitTimedOut("expected timeout", 1000))
+      }
     }
   }
 }
