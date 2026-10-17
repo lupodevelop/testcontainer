@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Release standalone formula resources when their caller is killed,
+  including during acquisition or release.
 - Report the configured Unix or TCP endpoint as a Gleam string in
   `DockerUnavailable` errors.
 - Retry network removal after a caller crash while container guards are
@@ -28,6 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   preserving the original exception even if release also fails.
 - Apply readiness deadlines to socket connections, reads, and polling sleeps;
   prevent probes from reporting success after the timeout.
+
+### Changed
+
+- Run standalone formula acquisition and release in the same dedicated guard
+  process. The body continues to run in the caller's process; acquisition and
+  release callbacks must not depend on the caller's process-local state.
 
 ## [1.0.2] - 2026-05-04
 

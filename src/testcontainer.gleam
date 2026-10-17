@@ -18,10 +18,11 @@ import testcontainer/internal/wait_runner
 import testcontainer/network
 import testcontainer/stack as stack_mod
 
-@external(erlang, "testcontainer_lifecycle", "with_cleanup")
-fn with_cleanup(
-  body: fn() -> Result(a, e),
-  cleanup: fn() -> Result(Nil, e),
+@external(erlang, "testcontainer_lifecycle", "with_standalone")
+fn with_standalone(
+  acquire: fn() -> Result(output, e),
+  body: fn(output) -> Result(a, e),
+  release: fn() -> Result(Nil, e),
 ) -> Result(a, e)
 
 // ---------------------------------------------------------------------------
@@ -265,7 +266,10 @@ pub fn with_formula(
 /// releases the resource. Release always runs even if body returns an error.
 /// If body succeeded but release failed, the release error is surfaced.
 /// Catchable panics/exceptions also run release before being re-raised.
-/// External process kills and VM termination cannot run this release callback.
+/// Acquire and release run in a dedicated guard; the body runs in the caller.
+/// If the caller is killed, the guard releases the resource asynchronously.
+/// An acquisition already in progress finishes first; release runs if it
+/// succeeds. VM termination prevents remaining cleanup.
 ///
 ///   use stack <- testcontainer.with_standalone_formula(compose_formula)
 ///
@@ -273,8 +277,9 @@ pub fn with_standalone_formula(
   f: formula.StandaloneFormula(output, err),
   body: fn(output) -> Result(a, err),
 ) -> Result(a, err) {
-  use output <- result.try(formula.standalone_acquire(f))
-  with_cleanup(fn() { body(output) }, fn() { formula.standalone_release(f) })
+  with_standalone(fn() { formula.standalone_acquire(f) }, body, fn() {
+    formula.standalone_release(f)
+  })
 }
 
 // ---------------------------------------------------------------------------
