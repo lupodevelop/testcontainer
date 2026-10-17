@@ -50,7 +50,9 @@ pub fn new(
 
 /// Create a StandaloneFormula from acquire and release functions.
 /// `acquire` is called once to obtain the resource; `release` is always
-/// called after the body finishes, even on error.
+/// called after the body finishes, even on a returned error or catchable
+/// panic. These callbacks run in the caller's process; externally killing
+/// that process or terminating the VM prevents release.
 pub fn new_standalone(
   acquire: fn() -> Result(output, err),
   release: fn() -> Result(Nil, err),

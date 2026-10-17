@@ -35,6 +35,19 @@ testcontainer.exec(client, ["ping", "-c", "1", "server"])
 Cleanup ordering: each `with_container` cleans its container before
 its `use` returns; `with_network` removes the network last.
 
+If the caller process crashes, container and network guards clean up
+asynchronously. The network guard retries Docker's HTTP 409 conflicts
+and HTTP 403 responses reporting active endpoints every 100 ms while
+the container guards release their endpoints. Retries stop after the
+configured `TESTCONTAINERS_STOP_TIMEOUT`
+(default 10 seconds) plus 60 seconds for Docker requests. An in-flight
+request can outlast that retry deadline. Other errors are not retried.
+Normal `network.remove` and cleanup after the body returns do not retry.
+
+Crash cleanup requires the Erlang VM to remain running. Containers kept
+with `TESTCONTAINERS_KEEP=true`, or other containers still attached to
+the network, prevent its removal; the guard does not disconnect them.
+
 ## `Stack` - typed multi-container
 
 `Stack(output)` adds a typed network builder that survives across

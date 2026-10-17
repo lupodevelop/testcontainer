@@ -522,7 +522,13 @@ pub fn stop_container(
 }
 
 pub fn remove_container(id: String) -> Result(Nil, error.Error) {
-  request_ok("DELETE", "/containers/" <> id <> "?force=true", "")
+  // Docker's v flag removes anonymous volumes; named volumes are retained.
+  let path = "/containers/" <> id <> "?force=true&v=true"
+  case request("DELETE", path, "") {
+    Ok(#(404, _)) -> Ok(Nil)
+    Ok(#(status, body)) -> check_ok("DELETE", path, status, body)
+    Error(e) -> Error(e)
+  }
 }
 
 pub fn inspect_container(id: String) -> Result(String, error.Error) {

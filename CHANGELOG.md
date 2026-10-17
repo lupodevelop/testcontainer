@@ -7,6 +7,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- Retry network removal after a caller crash while container guards are
+  still releasing active endpoints.
+- Keep container and network guards active until synchronous cleanup ends.
+- Always attempt forced container removal after a failed graceful stop;
+  treat an already absent container as successfully removed.
+- Remove anonymous container volumes during cleanup, preserving named volumes.
+- Release standalone formula resources after catchable panics/exceptions,
+  preserving the original exception even if release also fails.
+
 ## [1.0.2] - 2026-05-04
 
 ### Security / Hardening
