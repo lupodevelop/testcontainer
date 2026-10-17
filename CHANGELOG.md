@@ -7,10 +7,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.1.0] - 2026-10-17
+
+### Migration
+
+- Standalone formula `acquire` and `release` callbacks now run in the same
+  dedicated guard process instead of the caller's process. The body still
+  runs in the caller. Callbacks that depend on process-local state or return
+  resources restricted to the acquiring process must be adapted. See
+  [Standalone resource lifecycles](docs/formulas.md#standalone-resource-lifecycles).
 
 ### Fixed
 
+- Release standalone formula resources when their caller is killed,
+  including during acquisition or release.
 - Report the configured Unix or TCP endpoint as a Gleam string in
   `DockerUnavailable` errors.
 - Retry network removal after a caller crash while container guards are

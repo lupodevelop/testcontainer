@@ -51,8 +51,12 @@ pub fn new(
 /// Create a StandaloneFormula from acquire and release functions.
 /// `acquire` is called once to obtain the resource; `release` is always
 /// called after the body finishes, even on a returned error or catchable
-/// panic. These callbacks run in the caller's process; externally killing
-/// that process or terminating the VM prevents release.
+/// panic. Both callbacks run in the same dedicated guard process, while the
+/// body runs in the caller. Return resources that the caller can use across
+/// processes. If the caller dies, a successful acquisition is released even
+/// when acquisition or release was already in progress. Failed acquisitions
+/// must clean up any partial resources themselves. VM termination prevents
+/// remaining cleanup.
 pub fn new_standalone(
   acquire: fn() -> Result(output, err),
   release: fn() -> Result(Nil, err),

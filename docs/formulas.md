@@ -139,6 +139,28 @@ pub fn formula(c: FooConfig) -> formula.Formula(FooContainer) {
 
 All you need is `formula.new(spec, extract)`. The core does the rest.
 
+## Standalone resource lifecycles
+
+`formula.new_standalone(acquire, release)` manages resources with their own
+lifecycle, such as a Compose stack. `testcontainer.with_standalone_formula`
+runs `acquire` and `release` in the same dedicated guard process; the body
+runs in the caller. The acquired value must be usable from that caller,
+and callbacks cannot depend on the caller's process-local state.
+
+After a successful acquisition, release runs once on normal completion,
+returned errors, catchable panics, or caller termination. If the caller is
+killed during acquisition, the guard lets acquisition finish and releases
+the resource if it succeeds. If the caller is killed during release, the
+release callback continues. Failed acquisitions must clean up any partial
+resources themselves. Acquisition and release callbacks should bound their
+own external operations; VM termination prevents unfinished cleanup.
+
+While the caller is alive, body errors take precedence over returned
+release errors, and body exceptions retain their original reason and
+stack even if release also fails. A release failure after a successful
+body is propagated to the caller. After caller termination, release runs
+asynchronously and its outcome cannot be returned to that caller.
+
 ## Available formulas
 
 - `testcontainer_formulas/postgres`

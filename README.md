@@ -55,6 +55,15 @@ let assert Ok(host_port) = container.host_port(redis, port.tcp(6379))
 gleam add testcontainer
 ```
 
+### Upgrading to 1.1
+
+Standalone formula `acquire` and `release` callbacks now run in the same
+dedicated guard process so cleanup can continue if the caller is killed.
+The body still runs in the caller. If your callbacks depend on process-local
+state or return resources restricted to the acquiring process, adapt them
+before upgrading. See [Standalone resource lifecycles](docs/formulas.md#standalone-resource-lifecycles)
+and the [changelog](CHANGELOG.md).
+
 ## Documentation
 
 - [Quickstart](docs/quickstart.md): 5-minute tour of the API
